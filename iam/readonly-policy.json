@@ -1,0 +1,80 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EvsReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "evs:Get*",
+        "evs:List*",
+        "evs:Describe*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchLogsRead",
+      "Effect": "Allow",
+      "Action": [
+        "logs:StartQuery",
+        "logs:StopQuery",
+        "logs:GetQueryResults",
+        "logs:FilterLogEvents",
+        "logs:GetLogEvents",
+        "logs:GetLogRecord",
+        "logs:Describe*",
+        "logs:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudTrailLookupForCrossCheck",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:LookupEvents",
+        "cloudtrail:Get*",
+        "cloudtrail:Describe*",
+        "cloudtrail:List*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "BedrockInvokeForAgentThinking",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream",
+        "bedrock:Converse",
+        "bedrock:ConverseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:*:ACCOUNT_ID:inference-profile/us.anthropic.claude-opus-4-8",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-opus-4-8"
+      ]
+    },
+    {
+      "Sid": "DefenseInDepthDenyHighImpactWrites",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:Create*",
+        "ec2:Delete*",
+        "ec2:Modify*",
+        "ec2:Terminate*",
+        "ec2:Stop*",
+        "ec2:Reboot*",
+        "ec2:RunInstances",
+        "evs:Create*",
+        "evs:Delete*",
+        "evs:Update*",
+        "rds:Create*",
+        "rds:Delete*",
+        "rds:Modify*",
+        "rds:Reboot*",
+        "rds:Stop*",
+        "iam:*",
+        "s3:Put*",
+        "s3:Delete*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 本機產物
+/tmp/
+*.log
+
+# 機密（保險，本專案不應有；ACCOUNT_ID 用佔位符）
+.env
+*.pem
+credentials*
