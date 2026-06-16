@@ -21,31 +21,43 @@
 
 ---
 
-## 快速開始（CloudShell）
+## 在 CloudShell 一鍵部署
 
-### 0.（建議，一次性）建立唯讀角色 — 由管理者執行
+> 前置（各做一次）：① Bedrock console（`BEDROCK_REGION`，預設 us-east-1）→ Model access → 開通 **Claude Opus 4.8**；②（建議）由管理者跑一次 `bash setup-role.sh` 建唯讀角色，拿到 `EVS_DEBUG_ROLE_ARN`。
+
+### 首次部署（複製整段貼進 CloudShell）
 ```bash
-bash setup-role.sh
-# 完成後它會印出 EVS_DEBUG_ROLE_ARN，記下來
-```
-
-### 1. 開通模型
-到 Bedrock console（`BEDROCK_REGION` 那個 region，預設 us-east-1）→ Model access → 開通 **Claude Opus 4.8**。
-
-### 2. 一鍵部署 / 啟動
-```bash
-# 取得程式碼（git clone 或上傳這個資料夾），然後：
+git clone https://github.com/Kang-Zih-Jin/evs-debug-agent.git
 cd evs-debug-agent
 
-# （建議）帶入唯讀角色做縱深防禦
+# （建議）唯讀角色做縱深防禦；不設則用 CloudShell 當前身分
 export EVS_DEBUG_ROLE_ARN=arn:aws:iam::<ACCOUNT_ID>:role/EvsDebugReadOnlyRole
-# 視情況覆寫 region
-export AWS_REGION=ap-northeast-1        # 你的 EVS 所在 region
+# region（視情況覆寫）
+export AWS_REGION=ap-northeast-1        # EVS / log 所在 region
 export BEDROCK_REGION=us-east-1         # 已開通 Opus 4.8 的 region
 
-bash deploy.sh
+sh deploy.sh
 ```
-就進入互動模式，直接問例如：「EVS environment xxx 的 host 一直卡在某狀態，幫我查」。
+看到 `agent 已就緒` 就進入互動模式，直接問，例如：「EVS environment xxx 的 host 卡在某狀態，幫我查」。離開輸入 `exit`。
+
+### 更新到最新版（已 clone 過）
+```bash
+# 先離開正在跑的 agent（exit 或 Ctrl-C），再：
+cd ~/evs-debug-agent
+git pull
+sh deploy.sh
+```
+
+> ⚠️ 改了 code 一定要 `git pull` + **先 `exit` 舊 session 再重跑**，否則跑到的還是舊程式（更新不會套用到已在跑的 process）。
+>
+> 驗證跑的是新版：`git log --oneline -1`、`grep -n adaptive main.py`（應找得到 `"type": "adaptive"`）。
+
+### deploy.sh 一鍵做了什麼
+| 步驟 | 動作 |
+|------|------|
+| 1 | 在 `/tmp` 建 venv（不佔 CloudShell 1GB 持久儲存） |
+| 2 | `pip install -r requirements.txt` |
+| 3 | 帶入 region / 模型 / 角色環境變數 → `python3 main.py` 啟動 agent |
 
 ---
 
