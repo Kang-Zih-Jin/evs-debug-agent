@@ -92,4 +92,4 @@ evs-debug-agent/
 - **CloudShell 20 分鐘閒置斷線**：跑的時候不會斷；若跑完慢慢讀導致斷線，重連後重啟即可。
 - **成本**：Opus 4.8 為 pay-per-token，計入執行帳號。
 - **VMware 文件**：`read_official_doc` 只允許官方文件網域（techdocs.broadcom.com / docs.vmware.com / docs.aws.amazon.com 等）。
-- **套件 API 版本**：本程式針對 `strands-agents` 1.x 撰寫（`BedrockModel`、`MCPClient`、`BeforeToolCallEvent/AfterToolCallEvent`、`additional_request_fields` 開 reasoning）。若安裝到的版本 API 有差異，請依該版文件微調 `main.py` 對應處——**這份程式我尚未在 CloudShell 實機跑過，第一次部署請留意啟動訊息**。
+- **套件 API 版本**：本程式針對 `strands-agents` 1.x 撰寫（`BedrockModel`、`MCPClient`、`BeforeToolCallEvent/AfterToolCallEvent`）。reasoning 用 Opus 4.8 的 **adaptive thinking**（`additional_request_fields={"thinking":{"type":"adaptive"},"output_config":{"effort":"high"}}`；舊的 `type:enabled+budget_tokens` 在 4.7+ 會 400）。若安裝到的版本 API 有差異，請依該版文件微調 `main.py`。

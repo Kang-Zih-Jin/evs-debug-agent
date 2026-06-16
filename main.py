@@ -93,9 +93,12 @@ def build_model():
         model_id=MODEL_ID,
         region_name=BEDROCK_REGION,
         streaming=True,
-        # 開啟 Opus 4.8 延伸思考（reasoning），思考過程會透過 callback 串流顯示
+        # Opus 4.8（4.7+）只支援 adaptive thinking；舊的 {type:enabled,budget_tokens} 會 400。
+        # effort 必須放在獨立的 output_config，不能塞進 thinking（否則 ValidationException）。
+        # effort: high(預設,總是思考) / medium / low（max 僅 Opus 4.6）。
         additional_request_fields={
-            "thinking": {"type": "enabled", "budget_tokens": 4000}
+            "thinking": {"type": "adaptive"},
+            "output_config": {"effort": "high"},
         },
     )
 
@@ -150,32 +153,44 @@ def main():
     hooks = build_hooks()
     model = build_model()
 
-    # 2. 連 AWS Knowledge MCP（遠端託管、免認證），把文件查詢工具加進來
+    # 2. 連 AWS Knowledge MCP（遠端託管、免認證）。
+    #    只有「連線 / 列工具」階段的錯誤才降級；run_repl 的執行期錯誤不在這裡攔，
+    #    避免把模型/工具的執行錯誤誤報成「MCP 連線失敗」。
+    knowledge_mcp = None
+    mcp_tools = []
     try:
         from mcp.client.streamable_http import streamablehttp_client
         from strands.tools.mcp import MCPClient
 
         knowledge_mcp = MCPClient(lambda: streamablehttp_client(KNOWLEDGE_MCP_URL))
-        with knowledge_mcp:
-            mcp_tools = knowledge_mcp.list_tools_sync()
-            print(f"[init] 已連上 AWS Knowledge MCP，載入 {len(mcp_tools)} 個文件工具")
-            agent = Agent(
-                model=model,
-                tools=base_tools + mcp_tools,
-                hooks=hooks,
-                system_prompt=SYSTEM_PROMPT,
-            )
-            run_repl(agent)
+        knowledge_mcp.__enter__()  # 開啟連線，REPL 期間維持開啟
+        mcp_tools = knowledge_mcp.list_tools_sync()
+        print(f"[init] 已連上 AWS Knowledge MCP，載入 {len(mcp_tools)} 個文件工具")
     except Exception as e:  # noqa: BLE001
-        # MCP 連不上時降級：仍可用 read_official_doc 查 AWS/VMware 文件網站
-        print(f"[warn] AWS Knowledge MCP 連線失敗（{e}），降級為只用 read_official_doc 查文件。")
+        print(f"[warn] AWS Knowledge MCP 不可用（{e}），降級為只用 read_official_doc 查文件。")
+        if knowledge_mcp is not None:
+            try:
+                knowledge_mcp.__exit__(None, None, None)
+            except Exception:  # noqa: BLE001
+                pass
+        knowledge_mcp = None
+        mcp_tools = []
+
+    # 3. 建 agent 並進入互動（執行期錯誤照常往上拋，不再被誤判成 MCP 問題）
+    try:
         agent = Agent(
             model=model,
-            tools=base_tools,
+            tools=base_tools + mcp_tools,
             hooks=hooks,
             system_prompt=SYSTEM_PROMPT,
         )
         run_repl(agent)
+    finally:
+        if knowledge_mcp is not None:
+            try:
+                knowledge_mcp.__exit__(None, None, None)
+            except Exception:  # noqa: BLE001
+                pass
 
 
 if __name__ == "__main__":
